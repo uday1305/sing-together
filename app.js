@@ -2002,26 +2002,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach stream tracks to peer connection
     stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
-    // Handle remote stream tracks
+    // Handle remote stream tracks (robustly built track-by-track for Safari/iOS compatibility)
     peer.ontrack = (event) => {
-      console.log("Remote track received:", event.streams[0]);
-      remoteStream = event.streams[0];
+      console.log("Remote track received:", event.track, event.streams);
+      
+      if (!remoteStream) {
+        remoteStream = new MediaStream();
+      }
+      remoteStream.addTrack(event.track);
+      
       window.audioEngine.addRemoteStream(remoteStream);
       
       const remoteWrapper = document.getElementById('video-remote').parentElement;
-      if (remoteStream && remoteStream.getVideoTracks().length > 0) {
+      const lobbyVideoRemote = document.getElementById('lobby-video-remote');
+      const lobbyRemoteWrapper = lobbyVideoRemote ? lobbyVideoRemote.parentElement : null;
+      
+      if (remoteStream.getVideoTracks().length > 0) {
+        // Bind studio video element
         document.getElementById('video-remote').srcObject = remoteStream;
         remoteWrapper.classList.remove('no-video');
+        
+        // Bind lobby video element
+        if (lobbyVideoRemote) {
+          lobbyVideoRemote.srcObject = remoteStream;
+          lobbyRemoteWrapper.classList.remove('no-video');
+        }
       } else {
         document.getElementById('video-remote').srcObject = null;
         remoteWrapper.classList.add('no-video');
+        
+        if (lobbyVideoRemote) {
+          lobbyVideoRemote.srcObject = null;
+          lobbyRemoteWrapper.classList.add('no-video');
+        }
       }
 
-      // Bind lobby remote video and username label
-      const lobbyVideoRemote = document.getElementById('lobby-video-remote');
-      if (lobbyVideoRemote) {
-        lobbyVideoRemote.srcObject = remoteStream;
-      }
       const lblLobbyRemote = document.getElementById('lbl-lobby-remote-username');
       if (lblLobbyRemote) {
         lblLobbyRemote.textContent = remotePartnerUsername || 'Partner';
