@@ -370,21 +370,25 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Bind local video element
       const localWrapper = document.getElementById('video-local').parentElement;
+      const vidLocal = document.getElementById('video-local');
       if (localMediaStream && localMediaStream.getVideoTracks().length > 0) {
-        document.getElementById('video-local').srcObject = localMediaStream;
+        vidLocal.srcObject = localMediaStream;
+        vidLocal.play().catch(e => console.log("Studio local video play failed:", e));
         localWrapper.classList.remove('no-video');
       } else {
-        document.getElementById('video-local').srcObject = null;
+        vidLocal.srcObject = null;
         localWrapper.classList.add('no-video');
       }
       
       // Bind remote video element
       const remoteWrapper = document.getElementById('video-remote').parentElement;
+      const vidRemote = document.getElementById('video-remote');
       if (remoteStream && remoteStream.getVideoTracks().length > 0) {
-        document.getElementById('video-remote').srcObject = remoteStream;
+        vidRemote.srcObject = remoteStream;
+        vidRemote.play().catch(e => console.log("Studio remote video play failed:", e));
         remoteWrapper.classList.remove('no-video');
       } else {
-        document.getElementById('video-remote').srcObject = null;
+        vidRemote.srcObject = null;
         remoteWrapper.classList.add('no-video');
       }
 
@@ -1976,11 +1980,13 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Bind local video
       const localWrapper = document.getElementById('video-local').parentElement;
+      const vidLocal = document.getElementById('video-local');
       if (stream.getVideoTracks().length > 0) {
-        document.getElementById('video-local').srcObject = stream;
+        vidLocal.srcObject = stream;
+        vidLocal.play().catch(e => console.log("Local video play failed:", e));
         localWrapper.classList.remove('no-video');
       } else {
-        document.getElementById('video-local').srcObject = null;
+        vidLocal.srcObject = null;
         localWrapper.classList.add('no-video');
       }
 
@@ -1988,6 +1994,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const lobbyVideoLocal = document.getElementById('lobby-video-local');
       if (lobbyVideoLocal) {
         lobbyVideoLocal.srcObject = stream;
+        if (stream.getVideoTracks().length > 0) {
+          lobbyVideoLocal.play().catch(e => console.log("Lobby local video play failed:", e));
+        }
       }
       const lblLobbyLocal = document.getElementById('lbl-lobby-local-username');
       if (lblLobbyLocal) {
@@ -2019,12 +2028,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (remoteStream.getVideoTracks().length > 0) {
         // Bind studio video element
-        document.getElementById('video-remote').srcObject = remoteStream;
+        const vidRemote = document.getElementById('video-remote');
+        vidRemote.srcObject = remoteStream;
+        vidRemote.play().catch(e => console.log("Studio remote video play failed:", e));
         remoteWrapper.classList.remove('no-video');
         
         // Bind lobby video element
         if (lobbyVideoRemote) {
           lobbyVideoRemote.srcObject = remoteStream;
+          lobbyVideoRemote.play().catch(e => console.log("Lobby remote video play failed:", e));
           lobbyRemoteWrapper.classList.remove('no-video');
         }
       } else {
