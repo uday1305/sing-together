@@ -1,0 +1,17 @@
+{
+  "name": "sing-together",
+  "version": "1.0.0",
+  "description": "Sing Together Karaoke Web Application with user auth and online matchmaking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.1",
+    "mongoose": "^7.3.1",
+    "socket.io": "^4.7.1"
+  }
+}
