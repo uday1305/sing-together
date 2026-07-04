@@ -33,8 +33,10 @@ const UserSchema = new mongoose.Schema({
 });
 const MongoUser = mongoose.model('User', UserSchema);
 
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/singtogether';
+
 // Mongoose connect
-mongoose.connect('mongodb://127.0.0.1:27017/singtogether', {
+mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
@@ -42,7 +44,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/singtogether', {
   isUsingMongo = true;
 }).catch(err => {
   console.warn('\n======================================================');
-  console.warn('WARNING: Local MongoDB not found on mongodb://localhost:27017.');
+  console.warn(`WARNING: MongoDB not found on ${MONGO_URI}.`);
   console.warn('Falling back to local file JSON database ("db.json") for testing.');
   console.warn('======================================================\n');
 });
