@@ -1671,6 +1671,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.audioEngine.removeRemoteStream();
     remoteStream = null;
     remoteUserPitch = null;
+    iceCandidatesQueue = [];
     
     // Stop local video/mic tracks and clean source objects
     if (localMediaStream) {
@@ -1860,12 +1861,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- SOCKET.IO REAL-TIME MATCHMAKING & WEB SYSTEM ---
   let signalQueue = [];
+  let iceCandidatesQueue = [];
 
   async function handleIncomingSignal(data) {
     if (!peer) return;
     if (data.sdp) {
       try {
         await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        console.log("Remote SDP description set successfully.");
+        
+        // Process any queued ICE candidates now that remote description is set
+        while (iceCandidatesQueue.length > 0) {
+          const candidate = iceCandidatesQueue.shift();
+          try {
+            await peer.addIceCandidate(candidate);
+            console.log("Added queued remote ICE candidate.");
+          } catch(err) {
+            console.error("Error adding queued remote ICE candidate:", err);
+          }
+        }
+        
         if (data.sdp.type === 'offer') {
           const answer = await peer.createAnswer();
           await peer.setLocalDescription(answer);
@@ -1875,10 +1890,16 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Error setting remote SDP:", e);
       }
     } else if (data.candidate) {
-      try {
-        await peer.addIceCandidate(new RTCIceCandidate(data.candidate));
-      } catch(e) {
-        console.error("Error adding remote ICE candidate:", e);
+      const candidateObj = new RTCIceCandidate(data.candidate);
+      if (peer.remoteDescription && peer.remoteDescription.type) {
+        try {
+          await peer.addIceCandidate(candidateObj);
+        } catch(e) {
+          console.error("Error adding remote ICE candidate:", e);
+        }
+      } else {
+        console.log("Queueing remote ICE candidate until remote description is set.");
+        iceCandidatesQueue.push(candidateObj);
       }
     }
   }
@@ -2164,6 +2185,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- MATCHMAKING & PRIVATE ROOM TRIGGERS ---
   function primeVideoElements() {
+    // Resume AudioContext under user gesture context to avoid suspension
+    if (window.audioEngine) {
+      window.audioEngine.init().then(() => {
+        if (window.audioEngine.audioCtx && window.audioEngine.audioCtx.state === 'suspended') {
+          window.audioEngine.audioCtx.resume();
+          console.log("AudioContext resumed under user gesture.");
+        }
+      }).catch(e => console.log("AudioContext initialization failed:", e));
+    }
+
     const videos = [
       document.getElementById('lobby-video-local'),
       document.getElementById('lobby-video-remote'),
