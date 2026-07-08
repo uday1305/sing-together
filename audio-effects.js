@@ -176,6 +176,10 @@ class KaraokeAudioEngine {
 
   addRemoteStream(stream) {
     if (!this.audioCtx) return;
+    if (!stream || stream.getAudioTracks().length === 0) {
+      console.log("No remote audio tracks yet. Delaying Web Audio context binding.");
+      return;
+    }
     this.removeRemoteStream();
     
     this.remoteSource = this.audioCtx.createMediaStreamSource(stream);

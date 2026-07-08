@@ -2040,49 +2040,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle remote stream tracks (robustly built track-by-track for Safari/iOS compatibility)
     peer.ontrack = (event) => {
-      console.log("Remote track received:", event.track, event.streams);
-      
-      if (!remoteStream) {
-        remoteStream = new MediaStream();
-      }
-      remoteStream.addTrack(event.track);
-      
-      window.audioEngine.addRemoteStream(remoteStream);
-      
-      const remoteWrapper = document.getElementById('video-remote').parentElement;
-      const lobbyVideoRemote = document.getElementById('lobby-video-remote');
-      const lobbyRemoteWrapper = lobbyVideoRemote ? lobbyVideoRemote.parentElement : null;
-      
-      const rAudio = remoteStream.getAudioTracks().length > 0;
-      const rVideo = remoteStream.getVideoTracks().length > 0;
-      updateWebRTCDebug(`Connected. Remote tracks: Audio=${rAudio}, Video=${rVideo}`);
-
-      if (remoteStream.getVideoTracks().length > 0) {
-        // Bind studio video element
-        const vidRemote = document.getElementById('video-remote');
-        vidRemote.srcObject = remoteStream;
-        vidRemote.play().catch(e => console.log("Studio remote video play failed:", e));
-        remoteWrapper.classList.remove('no-video');
+      try {
+        console.log("Remote track received:", event.track, event.streams);
         
-        // Bind lobby video element
-        if (lobbyVideoRemote) {
-          lobbyVideoRemote.srcObject = remoteStream;
-          lobbyVideoRemote.play().catch(e => console.log("Lobby remote video play failed:", e));
-          lobbyRemoteWrapper.classList.remove('no-video');
+        if (!remoteStream) {
+          remoteStream = new MediaStream();
         }
-      } else {
-        document.getElementById('video-remote').srcObject = null;
-        remoteWrapper.classList.add('no-video');
+        remoteStream.addTrack(event.track);
         
-        if (lobbyVideoRemote) {
-          lobbyVideoRemote.srcObject = null;
-          lobbyRemoteWrapper.classList.add('no-video');
-        }
-      }
+        window.audioEngine.addRemoteStream(remoteStream);
+        
+        const remoteWrapper = document.getElementById('video-remote').parentElement;
+        const lobbyVideoRemote = document.getElementById('lobby-video-remote');
+        const lobbyRemoteWrapper = lobbyVideoRemote ? lobbyVideoRemote.parentElement : null;
+        
+        const rAudio = remoteStream.getAudioTracks().length > 0;
+        const rVideo = remoteStream.getVideoTracks().length > 0;
+        updateWebRTCDebug(`Connected. Remote tracks: Audio=${rAudio}, Video=${rVideo}`);
 
-      const lblLobbyRemote = document.getElementById('lbl-lobby-remote-username');
-      if (lblLobbyRemote) {
-        lblLobbyRemote.textContent = remotePartnerUsername || 'Partner';
+        if (remoteStream.getVideoTracks().length > 0) {
+          // Bind studio video element
+          const vidRemote = document.getElementById('video-remote');
+          vidRemote.srcObject = remoteStream;
+          vidRemote.play().catch(e => console.log("Studio remote video play failed:", e));
+          remoteWrapper.classList.remove('no-video');
+          
+          // Bind lobby video element
+          if (lobbyVideoRemote) {
+            lobbyVideoRemote.srcObject = remoteStream;
+            lobbyVideoRemote.play().catch(e => console.log("Lobby remote video play failed:", e));
+            lobbyRemoteWrapper.classList.remove('no-video');
+          }
+        } else {
+          document.getElementById('video-remote').srcObject = null;
+          remoteWrapper.classList.add('no-video');
+          
+          if (lobbyVideoRemote) {
+            lobbyVideoRemote.srcObject = null;
+            lobbyRemoteWrapper.classList.add('no-video');
+          }
+        }
+
+        const lblLobbyRemote = document.getElementById('lbl-lobby-remote-username');
+        if (lblLobbyRemote) {
+          lblLobbyRemote.textContent = remotePartnerUsername || 'Partner';
+        }
+      } catch (err) {
+        console.error("Error in peer.ontrack processing:", err);
+        updateWebRTCDebug(`Track Error: ${err.message}`);
       }
     };
 
