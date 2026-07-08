@@ -1672,6 +1672,9 @@ document.addEventListener('DOMContentLoaded', () => {
     remoteStream = null;
     remoteUserPitch = null;
     iceCandidatesQueue = [];
+    lastIceState = 'new';
+    lastLocalTracks = 'none';
+    lastRemoteTracks = 'none';
     
     // Stop local video/mic tracks and clean source objects
     if (localMediaStream) {
@@ -1986,11 +1989,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- WEBRTC CONNECTION OVER SOCKET.IO SIGNALING ---
-  function updateWebRTCDebug(text) {
+  let lastIceState = 'new';
+  let lastLocalTracks = 'none';
+  let lastRemoteTracks = 'none';
+
+  function updateWebRTCDebug() {
     const bar = document.getElementById('webrtc-debug-bar');
     if (bar) {
       bar.style.display = 'block';
-      bar.textContent = `WebRTC: ${text}`;
+      bar.textContent = `WebRTC: ICE=${lastIceState} | Local=${lastLocalTracks} | Remote=${lastRemoteTracks}`;
     }
   }
 
@@ -2008,7 +2015,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Track connection state
     peer.onconnectionstatechange = () => {
       console.log("WebRTC state changed:", peer.connectionState);
-      updateWebRTCDebug(`ICE State: ${peer.connectionState}`);
+      lastIceState = peer.connectionState;
+      updateWebRTCDebug();
       if (peer.connectionState === 'connected') {
         lblConnectionStatus.textContent = 'Voice & Video Connected!';
         lblPeerDetails.textContent = 'Connected. Ready to select song.';
@@ -2024,7 +2032,8 @@ document.addEventListener('DOMContentLoaded', () => {
       stream = await startLocalMediaStream(true);
       const hasAudio = stream.getAudioTracks().length > 0;
       const hasVideo = stream.getVideoTracks().length > 0;
-      updateWebRTCDebug(`Local tracks active: Audio=${hasAudio}, Video=${hasVideo}`);
+      lastLocalTracks = `Audio=${hasAudio}, Video=${hasVideo}`;
+      updateWebRTCDebug();
       
       // Bind local video
       const localWrapper = document.getElementById('video-local').parentElement;
@@ -2077,7 +2086,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const rAudio = remoteStream.getAudioTracks().length > 0;
         const rVideo = remoteStream.getVideoTracks().length > 0;
-        updateWebRTCDebug(`Connected. Remote tracks: Audio=${rAudio}, Video=${rVideo}`);
+        lastRemoteTracks = `Audio=${rAudio}, Video=${rVideo}`;
+        updateWebRTCDebug();
 
         if (remoteStream.getVideoTracks().length > 0) {
           // Bind studio video element
