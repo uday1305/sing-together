@@ -511,6 +511,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- LOCAL CAMERA & MICROPHONE STREAM CAPTURE ---
   async function startLocalMediaStream(requestVideo = false) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Error: Your browser blocks camera/microphone access on non-secure connections. Please ensure you are opening a secure URL starting with HTTPS (https://...) or localhost.");
+      throw new Error("Secure context required for media devices");
+    }
+
     if (localMediaStream) {
       const hasVideo = localMediaStream.getVideoTracks().length > 0;
       if (!requestVideo || hasVideo) {
