@@ -1963,7 +1963,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- WEBRTC CONNECTION OVER SOCKET.IO SIGNALING ---
   async function initSocketWebRTC(room, role) {
-    const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    const configuration = { 
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun.services.mozilla.com' }
+      ] 
+    };
     peer = new RTCPeerConnection(configuration);
     
     // Track connection state
