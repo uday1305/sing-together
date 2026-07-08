@@ -1685,6 +1685,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('video-remote').srcObject = null;
     document.getElementById('studio-camera-container').style.display = 'none';
     
+    const debugBar = document.getElementById('webrtc-debug-bar');
+    if (debugBar) debugBar.style.display = 'none';
+    
     btnHostRoom.disabled = false;
     btnHostRoom.innerHTML = '<i class="fa-solid fa-house-chimney-medical"></i> Generate Private Room';
     
@@ -1962,6 +1965,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- WEBRTC CONNECTION OVER SOCKET.IO SIGNALING ---
+  function updateWebRTCDebug(text) {
+    const bar = document.getElementById('webrtc-debug-bar');
+    if (bar) {
+      bar.style.display = 'block';
+      bar.textContent = `WebRTC: ${text}`;
+    }
+  }
+
   async function initSocketWebRTC(room, role) {
     const configuration = { 
       iceServers: [
@@ -1976,6 +1987,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Track connection state
     peer.onconnectionstatechange = () => {
       console.log("WebRTC state changed:", peer.connectionState);
+      updateWebRTCDebug(`ICE State: ${peer.connectionState}`);
       if (peer.connectionState === 'connected') {
         lblConnectionStatus.textContent = 'Voice & Video Connected!';
         lblPeerDetails.textContent = 'Connected. Ready to select song.';
@@ -1989,6 +2001,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let stream;
     try {
       stream = await startLocalMediaStream(true);
+      const hasAudio = stream.getAudioTracks().length > 0;
+      const hasVideo = stream.getVideoTracks().length > 0;
+      updateWebRTCDebug(`Local tracks active: Audio=${hasAudio}, Video=${hasVideo}`);
       
       // Bind local video
       const localWrapper = document.getElementById('video-local').parentElement;
@@ -2038,6 +2053,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const lobbyVideoRemote = document.getElementById('lobby-video-remote');
       const lobbyRemoteWrapper = lobbyVideoRemote ? lobbyVideoRemote.parentElement : null;
       
+      const rAudio = remoteStream.getAudioTracks().length > 0;
+      const rVideo = remoteStream.getVideoTracks().length > 0;
+      updateWebRTCDebug(`Connected. Remote tracks: Audio=${rAudio}, Video=${rVideo}`);
+
       if (remoteStream.getVideoTracks().length > 0) {
         // Bind studio video element
         const vidRemote = document.getElementById('video-remote');
@@ -2139,12 +2158,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- MATCHMAKING & PRIVATE ROOM TRIGGERS ---
+  function primeVideoElements() {
+    const videos = [
+      document.getElementById('lobby-video-local'),
+      document.getElementById('lobby-video-remote'),
+      document.getElementById('video-local'),
+      document.getElementById('video-remote')
+    ];
+    videos.forEach(video => {
+      if (video) {
+        // Play empty video temporarily to whitelist autoplay in Safari/Chrome
+        video.play().then(() => {
+          video.pause();
+        }).catch(e => console.log("Priming video element:", e));
+      }
+    });
+  }
+
   async function startMatchmaking() {
     if (!socket || !socket.connected) {
       alert("Websocket is disconnected. Please reload the page.");
       return;
     }
     
+    // Prime the video frames under user click gesture context
+    primeVideoElements();
+
     disconnectMultiplayer();
     isMatching = true;
     
@@ -2173,6 +2212,10 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("Websocket is disconnected. Please reload the page.");
       return;
     }
+    
+    // Prime video frames under user gesture
+    primeVideoElements();
+
     disconnectMultiplayer();
     
     btnHostRoom.disabled = true;
@@ -2192,6 +2235,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
+    // Prime video frames under user gesture
+    primeVideoElements();
+
     disconnectMultiplayer();
     btnJoinRoom.disabled = true;
     btnJoinRoom.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
