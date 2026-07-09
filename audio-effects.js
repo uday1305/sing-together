@@ -188,7 +188,9 @@ class KaraokeAudioEngine {
     
     this.remoteSource.connect(this.remoteGain);
     this.remoteGain.connect(this.masterGain);
-    this.remoteGain.connect(this.mixerDest);
+    if (this.mixerDest) {
+      this.remoteGain.connect(this.mixerDest);
+    }
     console.log("Remote peer audio stream added to local audio context.");
   }
 
