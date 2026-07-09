@@ -1,4 +1,21 @@
 // app.js - Application logic and UI controller
+window.onerror = function(message, source, lineno, colno, error) {
+  const errBox = document.getElementById('global-error-box');
+  const details = document.getElementById('global-error-details');
+  if (errBox && details) {
+    errBox.style.display = 'block';
+    details.innerHTML += `<div>Line ${lineno}:${colno} inside ${source.split('/').pop()} -> ${message}</div>`;
+  }
+};
+window.onunhandledrejection = function(event) {
+  const errBox = document.getElementById('global-error-box');
+  const details = document.getElementById('global-error-details');
+  if (errBox && details) {
+    errBox.style.display = 'block';
+    details.innerHTML += `<div>Promise rejection: ${event.reason}</div>`;
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   // Application State
   let currentScreen = 'home';
@@ -1895,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.sdp.type === 'offer') {
           const answer = await peer.createAnswer();
           await peer.setLocalDescription(answer);
-          socket.emit('signal', { room: activeRoomName, sdp: peer.localDescription });
+          socket.emit('signal', { room: activeRoomName, sdp: answer }); // Pass answer directly
         }
       } catch(e) {
         console.error("Error setting remote SDP:", e);
@@ -2184,7 +2201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
-        socket.emit('signal', { room, sdp: peer.localDescription });
+        socket.emit('signal', { room, sdp: offer }); // Pass offer directly
       } catch (err) {
         console.error("Failed to create offer:", err);
       }
