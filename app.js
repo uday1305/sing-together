@@ -209,10 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Bind Navigation events
-  navBtns.home.addEventListener('click', () => switchScreen('home'));
-  navBtns.gallery.addEventListener('click', () => switchScreen('gallery'));
-  navBtns.live.addEventListener('click', () => switchScreen('live'));
   document.getElementById('hero-action-btn').addEventListener('click', () => {
     // Scroll to songs catalogue
     document.querySelector('.catalog-header').scrollIntoView({ behavior: 'smooth' });
