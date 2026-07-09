@@ -49,16 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // DOM Elements
   const screens = {
+    dashboard: document.getElementById('screen-dashboard'),
     home: document.getElementById('screen-home'),
     studio: document.getElementById('screen-studio'),
     gallery: document.getElementById('screen-gallery'),
     live: document.getElementById('screen-live')
-  };
-
-  const navBtns = {
-    home: document.getElementById('nav-home'),
-    gallery: document.getElementById('nav-gallery'),
-    live: document.getElementById('nav-live')
   };
 
   const songsContainer = document.getElementById('songs-container');
@@ -164,12 +159,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Toggle nav active states
-    Object.keys(navBtns).forEach(key => {
-      if (key === screenName) {
-        navBtns[key].classList.add('active');
-      } else {
-        navBtns[key].classList.remove('active');
+    // Handle Top Navigation Tabs active classes
+    const topTabs = {
+      dashboard: document.getElementById('nav-home'),
+      home: document.getElementById('nav-songs'),
+      studio: document.getElementById('nav-studio'),
+      live: document.getElementById('nav-live'),
+      gallery: document.getElementById('nav-gallery')
+    };
+    Object.keys(topTabs).forEach(key => {
+      const btn = topTabs[key];
+      if (btn) {
+        if (key === screenName) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
+
+    // Handle Sidebar Menu Buttons active classes
+    const sidebarBtns = {
+      dashboard: document.getElementById('sidebar-home'),
+      home: document.getElementById('sidebar-songs'),
+      studio: document.getElementById('sidebar-studio'),
+      live: document.getElementById('sidebar-live'),
+      gallery: document.getElementById('sidebar-recordings')
+    };
+    Object.keys(sidebarBtns).forEach(key => {
+      const btn = sidebarBtns[key];
+      if (btn) {
+        if (key === screenName) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
       }
     });
 
@@ -180,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderSongsCatalog();
     } else if (screenName === 'gallery') {
       renderRecordingsGallery();
+    } else if (screenName === 'dashboard') {
+      renderDashboardContents();
     }
   }
 
@@ -1755,13 +1781,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show application interface
         screenAuth.classList.remove('active');
         screenAuth.style.display = 'none';
-        headerNav.style.display = 'flex';
+        document.getElementById('app-sidebar').style.display = 'flex';
+        document.getElementById('app-top-header').style.display = 'flex';
         userProfileDisplay.style.display = 'flex';
         
         // Connect Socket.io client
         initSocket(data.username);
         
-        switchScreen('home');
+        switchScreen('dashboard');
       } else {
         localStorage.removeItem('sing_together_token');
         showAuthScreen();
@@ -1776,8 +1803,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loggedInUser = null;
     screenAuth.classList.add('active');
     screenAuth.style.display = 'flex';
-    headerNav.style.display = 'none';
+    document.getElementById('app-sidebar').style.display = 'none';
+    document.getElementById('app-top-header').style.display = 'none';
     userProfileDisplay.style.display = 'none';
+    
+    if (miniPlayerAudio) {
+      try { miniPlayerAudio.pause(); } catch(e){}
+      miniPlayerAudio = null;
+      isMiniPlaying = false;
+      document.getElementById('mini-player-play-btn').innerHTML = '<i class="fa-solid fa-circle-play"></i>';
+    }
     
     // Hide other screens
     Object.values(screens).forEach(screen => {
@@ -2373,6 +2408,252 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCopyRoomId.innerHTML = '<i class="fa-regular fa-copy"></i> Copy ID';
     }, 2000);
   });
+
+  // --- BIND NEW DASHBOARD & SIDEBAR INTERACTIVITY ---
+
+  // Sidebar Menu Buttons
+  document.getElementById('sidebar-home').addEventListener('click', () => switchScreen('dashboard'));
+  document.getElementById('sidebar-songs').addEventListener('click', () => switchScreen('home'));
+  document.getElementById('sidebar-studio').addEventListener('click', () => {
+    // If no active song selected, redirect to songs list catalog
+    if (!activeSong) {
+      alert("Please select a song from the list first to sing in the studio!");
+      switchScreen('home');
+    } else {
+      switchScreen('studio');
+    }
+  });
+  document.getElementById('sidebar-live').addEventListener('click', () => switchScreen('live'));
+  document.getElementById('sidebar-recordings').addEventListener('click', () => switchScreen('gallery'));
+  
+  // Top Navigation Tabs
+  document.getElementById('nav-home').addEventListener('click', () => switchScreen('dashboard'));
+  document.getElementById('nav-songs').addEventListener('click', () => switchScreen('home'));
+  document.getElementById('nav-studio').addEventListener('click', () => {
+    if (!activeSong) {
+      alert("Please select a song from the list first to sing in the studio!");
+      switchScreen('home');
+    } else {
+      switchScreen('studio');
+    }
+  });
+  document.getElementById('nav-live').addEventListener('click', () => switchScreen('live'));
+  document.getElementById('nav-gallery').addEventListener('click', () => switchScreen('gallery'));
+
+  // Dashboard Buttons
+  const dashboardStartBtn = document.getElementById('dashboard-btn-start');
+  if (dashboardStartBtn) {
+    dashboardStartBtn.addEventListener('click', () => switchScreen('home'));
+  }
+  const dashboardExploreBtn = document.getElementById('dashboard-btn-explore');
+  if (dashboardExploreBtn) {
+    dashboardExploreBtn.addEventListener('click', () => switchScreen('home'));
+  }
+  
+  // Dashboard Action Listeners: View All links
+  const viewAllListening = document.getElementById('btn-dashboard-view-listening');
+  if (viewAllListening) {
+    viewAllListening.addEventListener('click', (e) => { e.preventDefault(); switchScreen('home'); });
+  }
+  const viewAllTrending = document.getElementById('btn-dashboard-view-trending');
+  if (viewAllTrending) {
+    viewAllTrending.addEventListener('click', (e) => { e.preventDefault(); switchScreen('home'); });
+  }
+  const viewAllRecordings = document.getElementById('btn-dashboard-view-recordings');
+  if (viewAllRecordings) {
+    viewAllRecordings.addEventListener('click', (e) => { e.preventDefault(); switchScreen('gallery'); });
+  }
+
+  // Dashboard Upload Dropzone trigger
+  const dashboardUploadZone = document.getElementById('dashboard-upload-zone');
+  if (dashboardUploadZone) {
+    dashboardUploadZone.addEventListener('click', () => {
+      modalUpload.classList.add('active');
+    });
+  }
+
+  // Dashboard Live Rooms click binders: Clicking "Join Stage" navigates to WebRTC screen
+  const joinStageBtns = document.querySelectorAll('.live-room-item');
+  joinStageBtns.forEach(item => {
+    item.addEventListener('click', () => {
+      switchScreen('live');
+    });
+  });
+
+  // Global Search redirection
+  const songSearchGlobal = document.getElementById('song-search-global');
+  if (songSearchGlobal) {
+    songSearchGlobal.addEventListener('input', (e) => {
+      const query = e.target.value;
+      switchScreen('home');
+      const localSearch = document.getElementById('song-search');
+      if (localSearch) {
+        localSearch.value = query;
+        // Trigger catalog render manually
+        renderSongsCatalog();
+      }
+    });
+  }
+
+  // Mini Player Audio Engine State
+  let miniPlayerAudio = null;
+  let isMiniPlaying = false;
+  let currentMiniSong = null;
+
+  function playMiniPlayerSong(song) {
+    if (miniPlayerAudio) {
+      try { miniPlayerAudio.pause(); } catch(e){}
+      miniPlayerAudio = null;
+    }
+    
+    currentMiniSong = song;
+    document.getElementById('mini-player-title').textContent = song.title;
+    document.getElementById('mini-player-artist').textContent = song.artist;
+    
+    miniPlayerAudio = new Audio(song.audioUrl);
+    miniPlayerAudio.volume = 0.5;
+    
+    miniPlayerAudio.play().then(() => {
+      isMiniPlaying = true;
+      document.getElementById('mini-player-play-btn').innerHTML = '<i class="fa-solid fa-circle-pause"></i>';
+    }).catch(e => console.log("Mini player playback failed:", e));
+    
+    miniPlayerAudio.ontimeupdate = () => {
+      const slider = document.getElementById('mini-player-progress');
+      if (slider) {
+        const percent = (miniPlayerAudio.currentTime / miniPlayerAudio.duration) * 100;
+        slider.value = percent || 0;
+      }
+      
+      const currentTimeLabel = document.querySelector('.player-time span:first-child');
+      const totalTimeLabel = document.querySelector('.player-time span:last-child');
+      if (currentTimeLabel && totalTimeLabel) {
+        currentTimeLabel.textContent = formatTime(miniPlayerAudio.currentTime);
+        totalTimeLabel.textContent = formatTime(miniPlayerAudio.duration || 0);
+      }
+    };
+    
+    miniPlayerAudio.onended = () => {
+      isMiniPlaying = false;
+      document.getElementById('mini-player-play-btn').innerHTML = '<i class="fa-solid fa-circle-play"></i>';
+    };
+  }
+
+  document.getElementById('mini-player-play-btn').addEventListener('click', () => {
+    if (!miniPlayerAudio) {
+      if (songsList && songsList.length > 0) {
+        playMiniPlayerSong(songsList[0]);
+      }
+      return;
+    }
+    
+    if (isMiniPlaying) {
+      miniPlayerAudio.pause();
+      isMiniPlaying = false;
+      document.getElementById('mini-player-play-btn').innerHTML = '<i class="fa-solid fa-circle-play"></i>';
+    } else {
+      miniPlayerAudio.play().then(() => {
+        isMiniPlaying = true;
+        document.getElementById('mini-player-play-btn').innerHTML = '<i class="fa-solid fa-circle-pause"></i>';
+      }).catch(e => console.log("Failed to resume mini player:", e));
+    }
+  });
+
+  // Dynamic Dashboard Render Routines
+  function renderDashboardContents() {
+    renderDashboardTrendingSongs();
+    renderDashboardRecentRecordings();
+  }
+
+  function renderDashboardTrendingSongs() {
+    const container = document.getElementById('dashboard-trending-songs-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const trendingSongs = songsList.slice(0, 4);
+    trendingSongs.forEach(song => {
+      const card = document.createElement('div');
+      card.className = 'song-card';
+      
+      const stars = '⭐'.repeat(Math.round(song.rating || 5));
+      
+      card.innerHTML = `
+        <div class="song-info">
+          <h4>${song.title}</h4>
+          <p>${song.artist}</p>
+          <div class="song-meta">
+            <span class="badge badge-genre">${song.genre}</span>
+            <span style="font-size: 11px; color: #ffd700;">${stars}</span>
+          </div>
+        </div>
+        <div class="song-actions">
+          <button class="preview-btn tab-btn" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-play"></i> Preview</button>
+          <button class="sing-btn" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-microphone"></i> Sing</button>
+          <button class="duet-icon-btn" style="width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-user-group" style="font-size: 10px;"></i></button>
+        </div>
+      `;
+      
+      card.querySelector('.preview-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        playMiniPlayerSong(song);
+      });
+      
+      card.querySelector('.sing-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        activeSingingMode = 'solo';
+        launchStudioSession(song);
+      });
+      
+      card.querySelector('.duet-icon-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        activeSong = song;
+        modalDuetPicker.classList.add('active');
+      });
+      
+      container.appendChild(card);
+    });
+  }
+
+  async function renderDashboardRecentRecordings() {
+    const container = document.getElementById('dashboard-recent-recordings-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    try {
+      const recordings = await getAllRecordings();
+      recordings.sort((a, b) => b.timestamp - a.timestamp);
+      const topRecordings = recordings.slice(0, 4);
+      
+      if (topRecordings.length === 0) {
+        container.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">No recordings found. Click 'Start Singing' to create one!</td></tr>`;
+        return;
+      }
+      
+      topRecordings.forEach(rec => {
+        const row = document.createElement('tr');
+        const dateStr = new Date(rec.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        row.innerHTML = `
+          <td>
+            <div class="rec-row-info">
+              <div class="rec-artwork"><i class="fa-solid fa-music"></i></div>
+              <div class="rec-meta-details">
+                <h5>${rec.title || 'Untitled Performance'}</h5>
+                <p>${rec.artist || 'Unknown Artist'}</p>
+              </div>
+            </div>
+          </td>
+          <td>${dateStr}</td>
+          <td>${formatTime(rec.duration || 180)}</td>
+          <td style="text-align: right; color: var(--accent-blue);"><i class="fa-solid fa-eye"></i> ${Math.floor(100 + Math.random() * 900)}</td>
+          <td style="text-align: right; color: var(--accent-pink);"><i class="fa-solid fa-heart"></i> ${Math.floor(10 + Math.random() * 90)}</td>
+        `;
+        container.appendChild(row);
+      });
+    } catch (err) {
+      console.error("Failed to render dashboard recordings:", err);
+    }
+  }
 
   // Initial Load (Session Verification)
   verifyUserSession();
