@@ -45,9 +45,9 @@ class KaraokeAudioEngine {
   async init() {
     if (this.audioCtx) return;
     
-    // Create audio context
+    // Create audio context optimized for low-latency live interactive performance (like Zoom)
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    this.audioCtx = new AudioContextClass();
+    this.audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
     
     // Main components
     this.masterGain = this.audioCtx.createGain();

@@ -537,11 +537,17 @@ document.addEventListener('DOMContentLoaded', () => {
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: false
+        autoGainControl: true, // Auto gain balance like Zoom
+        latency: 0.01 // Request minimal audio latency
       }
     };
     if (requestVideo) {
-      constraints.video = { width: 320, height: 240, frameRate: 24 };
+      constraints.video = { 
+        width: { ideal: 640, max: 1280 }, 
+        height: { ideal: 480, max: 720 }, 
+        frameRate: { ideal: 30, max: 60 },
+        facingMode: "user"
+      };
     }
     
     try {
@@ -1675,6 +1681,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lastIceState = 'new';
     lastLocalTracks = 'none';
     lastRemoteTracks = 'none';
+    isLocalStreamAdded = false;
     
     // Stop local video/mic tracks and clean source objects
     if (localMediaStream) {
@@ -1865,6 +1872,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- SOCKET.IO REAL-TIME MATCHMAKING & WEB SYSTEM ---
   let signalQueue = [];
   let iceCandidatesQueue = [];
+  let isLocalStreamAdded = false;
 
   async function handleIncomingSignal(data) {
     if (!peer) return;
@@ -1920,7 +1928,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle incoming WebRTC signaling with queueing to prevent race conditions
     socket.on('signal', async (data) => {
-      if (peer) {
+      if (peer && isLocalStreamAdded) {
         await handleIncomingSignal(data);
       } else {
         console.log("Queueing incoming WebRTC signal:", data);
@@ -2008,7 +2016,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun.services.mozilla.com' }
-      ] 
+      ],
+      iceCandidatePoolSize: 10 // Pre-gather candidates for ultra-fast Zoom-like startup!
     };
     peer = new RTCPeerConnection(configuration);
     
@@ -2065,8 +2074,38 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Attach stream tracks to peer connection
-    stream.getTracks().forEach(track => peer.addTrack(track, stream));
+    // Attach stream tracks to peer connection with high-priority low-latency RTCPeerConnection parameters
+    stream.getTracks().forEach(track => {
+      const sender = peer.addTrack(track, stream);
+      
+      // Optimize sender parameters for smooth frame rates and zero lag (degradation preference)
+      if (track.kind === 'video') {
+        try {
+          const params = sender.getParameters();
+          if (!params.encodings) params.encodings = [{}];
+          params.encodings[0].maxBitrate = 1500000; // 1.5 Mbps for smooth 640x480 video
+          params.encodings[0].networkPriority = 'high';
+          params.encodings[0].priority = 'high';
+          sender.setParameters(params).catch(e => console.log("Set video parameters failed:", e));
+        } catch(e){}
+        
+        try {
+          // Maintaining framerate is critical for karaoke/live singing to avoid visual lag
+          sender.transport.setDegradationPreference('maintain-framerate');
+        } catch(e){}
+      } else if (track.kind === 'audio') {
+        try {
+          const params = sender.getParameters();
+          if (!params.encodings) params.encodings = [{}];
+          params.encodings[0].networkPriority = 'high';
+          params.encodings[0].priority = 'high';
+          sender.setParameters(params).catch(e => console.log("Set audio parameters failed:", e));
+        } catch(e){}
+      }
+    });
+
+    // Mark local stream as fully active before processing signaling messages
+    isLocalStreamAdded = true;
 
     // Handle remote stream tracks (robustly built track-by-track for Safari/iOS compatibility)
     peer.ontrack = (event) => {
