@@ -2618,8 +2618,8 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = '';
     
     try {
-      const recordings = await getAllRecordings();
-      recordings.sort((a, b) => b.timestamp - a.timestamp);
+      const recordings = await window.karaokeDb.getAllRecordings();
+      recordings.sort((a, b) => new Date(b.date) - new Date(a.date));
       const topRecordings = recordings.slice(0, 4);
       
       if (topRecordings.length === 0) {
@@ -2629,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       topRecordings.forEach(rec => {
         const row = document.createElement('tr');
-        const dateStr = new Date(rec.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const dateStr = new Date(rec.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         
         row.innerHTML = `
           <td>
