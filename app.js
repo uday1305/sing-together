@@ -2537,8 +2537,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('mini-player-play-btn').addEventListener('click', () => {
     if (!miniPlayerAudio) {
-      if (songsList && songsList.length > 0) {
-        playMiniPlayerSong(songsList[0]);
+      const allSongs = [...window.songsCatalog, ...customSongs];
+      if (allSongs && allSongs.length > 0) {
+        playMiniPlayerSong(allSongs[0]);
       }
       return;
     }
@@ -2566,7 +2567,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!container) return;
     container.innerHTML = '';
     
-    const trendingSongs = songsList.slice(0, 4);
+    const allSongs = [...window.songsCatalog, ...customSongs];
+    const trendingSongs = allSongs.slice(0, 4);
     trendingSongs.forEach(song => {
       const card = document.createElement('div');
       card.className = 'song-card';
