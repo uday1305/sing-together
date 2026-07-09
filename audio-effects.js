@@ -125,10 +125,9 @@ class KaraokeAudioEngine {
 
   // Create standard procedural white-noise convolution reverb
   createReverbBuffer(duration, decay) {
-    const sampleRate = 44100;
-    const length = sampleRate * duration;
-    // Temporary AudioContext if this.audioCtx doesn't exist yet
     const ctx = this.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const sampleRate = ctx.sampleRate || 44100;
+    const length = sampleRate * duration;
     const impulse = ctx.createBuffer(2, length, sampleRate);
     const left = impulse.getChannelData(0);
     const right = impulse.getChannelData(1);
